@@ -7,9 +7,13 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasProperty;
 
 import com.mysema.query.jpa.JPQLQueryFactory;
+import com.mysema.query.support.Expressions;
+import com.mysema.query.types.ConstantImpl;
+import com.mysema.query.types.Ops;
 
 import java.util.Date;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -42,6 +46,28 @@ public class CustomerRepositoryTest extends TestCase {
             hasProperty("firstName", equalTo("Luke")),
             hasProperty("firstName", equalTo("Anakin"))
         )
+    );
+  }
+
+  @Ignore // doesn't work :(
+  @Test
+  public void averageAgeTest() {
+    // given
+    customerRepository.save(new Customer("Anakin", "Skywalker", new Date(1986, 0, 1, 0, 0, 0)));
+    customerRepository.save(new Customer("Luke", "Skywalker", new Date(1986, 0, 1, 0, 0, 10)));
+    Date now = new Date(1986, 0, 1, 0, 0, 20);
+
+    // expect
+    assertThat(
+        queryFactory.from(customer).singleResult(
+            Expressions.numberOperation(
+                Long.class,
+                Ops.DateTimeOps.DIFF_SECONDS,
+                ConstantImpl.create(now),
+                customer.birthDate
+            ).avg()
+        ),
+        equalTo(15L) // average of 20s (age of Anakin) and 10s (age of Luke)
     );
   }
 }
